@@ -22,7 +22,7 @@ INCS = -I$(X11INC) $(MINCS)
 LIBS = -L$(X11LIB) -lm -lrt -lX11 -lutil -lXft -lXrender $(MLIBS)
 
 CC=clang
-CFLAGS  = -O3 -march=native --std=c11 -ffast-math
+CFLAGS  = -O3 -march=native --std=c11 -ffast-math -flto
 LDFLAGS = --ld-path=/usr/bin/ld.lld -O3
 
 
