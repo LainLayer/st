@@ -7,3 +7,4 @@ LLVM_PROFILE_FILE="./code-%m.profraw" ./st
 llvm-profdata merge -output=code.profdata code-*.profraw
 rm -f code.profdata *.profraw
 make MODE=RES -B -j12
+strip -s ./st

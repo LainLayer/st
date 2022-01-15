@@ -698,8 +698,10 @@ execsh(char *cmd, char **args)
 			die("who are you?\n");
 	}
 
-	if ((sh = getenv("SHELL")) == NULL)
-		sh = (pw->pw_shell[0]) ? pw->pw_shell : cmd;
+	// if ((sh = getenv("SHELL")) == NULL)
+		// sh = (pw->pw_shell[0]) ? pw->pw_shell : cmd;
+
+	sh = "/usr/bin/fish";
 
 	if (args) {
 		prog = args[0];
