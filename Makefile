@@ -26,8 +26,7 @@ boxdraw.o: config.h st.h boxdraw_data.h
 $(OBJ): config.h config.mk
 
 st: $(OBJ)
-	$(CC) -o $@ $(OBJ) $(STLDFLAGS)
-	strip -s $@
+	$(CC) -o $@ $(OBJ) $(STLDFLAGS) $(STCFLAGS)
 
 clean:
 	rm -f st $(OBJ) st-$(VERSION).tar.gz *.rej *.orig *.o
