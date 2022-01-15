@@ -22,6 +22,7 @@ LIBS = -L$(X11LIB) -lm -lrt -lX11 -lutil -lXft -lXrender $(MLIBS)
 
 PROF_GEN = -fprofile-instr-generate
 RPOF_RES = -fprofile-instr-use=code.profdata
+PROF_NONE =""
 
 # custom flags
 CC=clang

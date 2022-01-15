@@ -7,7 +7,7 @@
  */
 static char *font = "mono:pixelsize=18:antialias=true:autohint=true";
 static char *font2[] = { "JoyPixels:pixelsize=18:antialias=true:autohint=true" };
-static int borderpx = 2;
+static int borderpx = 8;
 
 /*
  * What program is execed by st depends of these precedence rules:
