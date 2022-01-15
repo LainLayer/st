@@ -5,8 +5,8 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "mono:pixelsize=12:antialias=true:autohint=true";
-static char *font2[] = { "JoyPixels:pixelsize=10:antialias=true:autohint=true" };
+static char *font = "mono:pixelsize=18:antialias=true:autohint=true";
+static char *font2[] = { "JoyPixels:pixelsize=18:antialias=true:autohint=true" };
 static int borderpx = 2;
 
 /*
@@ -17,7 +17,7 @@ static int borderpx = 2;
  * 4: value of shell in /etc/passwd
  * 5: value of shell in config.h
  */
-static char *shell = "/bin/sh";
+static char *shell = "/usr/bin/fish";
 char *utmp = NULL;
 /* scroll program: to enable use a string like "scroll" */
 char *scroll = NULL;
@@ -46,7 +46,7 @@ int allowaltscreen = 1;
 
 /* allow certain non-interactive (insecure) window operations such as:
    setting the clipboard text */
-int allowwindowops = 0;
+int allowwindowops = 1;
 
 /*
  * draw latency range in ms - from new content/keypress/etc until drawing.
@@ -107,34 +107,61 @@ char *termname = "st-256color";
 unsigned int tabspaces = 8;
 
 /* bg opacity */
-float alpha = 0.8;
+float alpha = 1.0;
 float alphaOffset = 0.0;
 float alphaUnfocus;
 
+/*
+colors:
+primary:
+foreground: "#fde8d1"
+background: "#171215"
+normal:
+black:      "#141414"
+red:        "#d45113"
+green:      "#5b6c5d"
+yellow:     "#edd382"
+blue:       "#f8dda4"
+magenta:    "#929982"
+cyan:       "#4e937a"
+white:      "#fcddbc"
+bright:
+black:   "#626262"
+red:     "#f08452"
+green:   "#8da090"
+yellow:  "#f3e1ab"
+blue:    "#fae9c3"
+magenta: "#b5baaa"
+cyan:    "#82bda7"
+white:   "#fde8d1"
+*/
+
+
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {
-	"#282828", /* hard contrast: #1d2021 / soft contrast: #32302f */
-	"#cc241d",
-	"#98971a",
-	"#d79921",
-	"#458588",
-	"#b16286",
-	"#689d6a",
-	"#a89984",
-	"#928374",
-	"#fb4934",
-	"#b8bb26",
-	"#fabd2f",
-	"#83a598",
-	"#d3869b",
-	"#8ec07c",
-	"#ebdbb2",
+	"#141414",
+	"#d45113",
+	"#5b6c5d",
+	"#edd382",
+	"#f8dda4",
+	"#929982",
+	"#4e937a",
+	"#fcddbc",
+	
+	"#626262",
+	"#f08452",
+	"#8da090",
+	"#f3e1ab",
+	"#fae9c3",
+	"#b5baaa",
+	"#82bda7",
+	"#fde8d1",
 	[255] = 0,
 	/* more colors can be added after 255 to use with DefaultXX */
 	"#add8e6", /* 256 -> cursor */
 	"#555555", /* 257 -> rev cursor*/
-	"#282828", /* 258 -> bg */
-	"#ebdbb2", /* 259 -> fg */
+	"#171215", /* 259 -> fg */
+	"#fde8d1", /* 258 -> bg */
 };
 
 
@@ -190,24 +217,24 @@ static uint forcemousemod = ShiftMask;
 ResourcePref resources[] = {
 		{ "font",         STRING,  &font },
 		{ "fontalt0",     STRING,  &font2[0] },
-		{ "color0",       STRING,  &colorname[0] },
-		{ "color1",       STRING,  &colorname[1] },
-		{ "color2",       STRING,  &colorname[2] },
-		{ "color3",       STRING,  &colorname[3] },
-		{ "color4",       STRING,  &colorname[4] },
-		{ "color5",       STRING,  &colorname[5] },
-		{ "color6",       STRING,  &colorname[6] },
-		{ "color7",       STRING,  &colorname[7] },
-		{ "color8",       STRING,  &colorname[8] },
-		{ "color9",       STRING,  &colorname[9] },
-		{ "color10",      STRING,  &colorname[10] },
-		{ "color11",      STRING,  &colorname[11] },
-		{ "color12",      STRING,  &colorname[12] },
-		{ "color13",      STRING,  &colorname[13] },
-		{ "color14",      STRING,  &colorname[14] },
-		{ "color15",      STRING,  &colorname[15] },
-		{ "background",   STRING,  &colorname[258] },
-		{ "foreground",   STRING,  &colorname[259] },
+		// { "color0",       STRING,  &colorname[0] },
+		// { "color1",       STRING,  &colorname[1] },
+		// { "color2",       STRING,  &colorname[2] },
+		// { "color3",       STRING,  &colorname[3] },
+		// { "color4",       STRING,  &colorname[4] },
+		// { "color5",       STRING,  &colorname[5] },
+		// { "color6",       STRING,  &colorname[6] },
+		// { "color7",       STRING,  &colorname[7] },
+		// { "color8",       STRING,  &colorname[8] },
+		// { "color9",       STRING,  &colorname[9] },
+		// { "color10",      STRING,  &colorname[10] },
+		// { "color11",      STRING,  &colorname[11] },
+		// { "color12",      STRING,  &colorname[12] },
+		// { "color13",      STRING,  &colorname[13] },
+		// { "color14",      STRING,  &colorname[14] },
+		// { "color15",      STRING,  &colorname[15] },
+		// { "background",   STRING,  &colorname[258] },
+		// { "foreground",   STRING,  &colorname[259] },
 		{ "cursorColor",  STRING,  &colorname[256] },
 		{ "termname",     STRING,  &termname },
 		{ "shell",        STRING,  &shell },
@@ -273,8 +300,8 @@ static Shortcut shortcuts[] = {
 	{ MODKEY,               XK_Down,        kscrolldown,    {.i =  1} },
 	{ MODKEY,               XK_u,           kscrollup,      {.i = -1} },
 	{ MODKEY,               XK_d,           kscrolldown,    {.i = -1} },
-	{ MODKEY,		XK_s,		changealpha,	{.f = -0.05} },
-	{ MODKEY,		XK_a,		changealpha,	{.f = +0.05} },
+	{ MODKEY,		        XK_s,    		changealpha,	{.f = -0.05} },
+	{ MODKEY,		        XK_a,    		changealpha,	{.f = +0.05} },
 	{ TERMMOD,              XK_Up,          zoom,           {.f = +1} },
 	{ TERMMOD,              XK_Down,        zoom,           {.f = -1} },
 	{ TERMMOD,              XK_K,           zoom,           {.f = +1} },

@@ -27,6 +27,7 @@ $(OBJ): config.h config.mk
 
 st: $(OBJ)
 	$(CC) -o $@ $(OBJ) $(STLDFLAGS)
+	strip -s $@
 
 clean:
 	rm -f st $(OBJ) st-$(VERSION).tar.gz *.rej *.orig *.o
