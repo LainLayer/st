@@ -41,7 +41,7 @@ typedef struct {
 typedef struct {
 	KeySym k;
 	uint mask;
-	char *s;
+	char* s;
 	/* three-valued logic variables: 0 indifferent, 1 on, -1 off */
 	signed char appkey;    /* application keypad */
 	signed char appcursor; /* application cursor */
@@ -49,15 +49,15 @@ typedef struct {
 
 /* Xresources preferences */
 enum resource_type {
-	STRING = 0,
+	STRING  = 0,
 	INTEGER = 1,
-	FLOAT = 2
+	FLOAT   = 2
 };
 
 typedef struct {
-	char *name;
+	char* name;
 	enum resource_type type;
-	void *dst;
+	void* dst;
 } ResourcePref;
 
 /* X modifiers */
@@ -95,12 +95,12 @@ typedef XftGlyphFontSpec GlyphFontSpec;
 
 /* Purely graphic info */
 typedef struct {
-	int tw, th; /* tty width and height */
-	int w, h; /* window width and height */
-	int ch; /* char height */
-	int cw; /* char width  */
-	int mode; /* window state/mode flags */
-	int cursor; /* cursor style */
+	int tw, th; /* tty width and height    */
+	int w, h;   /* window width and height */
+	int ch;     /* char height             */
+	int cw;     /* char width              */
+	int mode;   /* window state/mode flags */
+	int cursor; /* cursor style            */
 } TermWindow;
 
 typedef struct {
@@ -120,10 +120,10 @@ typedef struct {
 	Visual *vis;
 	XSetWindowAttributes attrs;
 	int scr;
-	int isfixed; /* is fixed geometry? */
-	int depth; /* bit depth */
-	int l, t; /* left and top offset */
-	int gm; /* geometry mask */
+	int isfixed; /* is fixed geometry?  */
+	int depth;   /* bit depth           */
+	int l, t;    /* left and top offset */
+	int gm;      /* geometry mask       */
 } XWindow;
 
 typedef struct {
@@ -256,22 +256,22 @@ typedef struct {
 } Fontcache;
 
 /* Fontcache is an array now. A new font will be appended to the array. */
-static Fontcache *frc = NULL;
-static int frclen = 0;
-static int frccap = 0;
-static char *usedfont = NULL;
-static double usedfontsize = 0;
-static double defaultfontsize = 0;
+static Fontcache* frc             = NULL;
+static int        frclen          = 0;
+static int        frccap          = 0;
+static char*      usedfont        = NULL;
+static double     usedfontsize    = 0;
+static double     defaultfontsize = 0;
 
-static char *opt_alpha = NULL;
-static char *opt_class = NULL;
-static char **opt_cmd  = NULL;
-static char *opt_embed = NULL;
-static char *opt_font  = NULL;
-static char *opt_io    = NULL;
-static char *opt_line  = NULL;
-static char *opt_name  = NULL;
-static char *opt_title = NULL;
+static char*  opt_alpha = NULL;
+static char*  opt_class = NULL;
+static char** opt_cmd   = NULL;
+static char*  opt_embed = NULL;
+static char*  opt_font  = NULL;
+static char*  opt_io    = NULL;
+static char*  opt_line  = NULL;
+static char*  opt_name  = NULL;
+static char*  opt_title = NULL;
 
 static int focused = 0;
 
@@ -1407,10 +1407,10 @@ int xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, i
 			FcCharSetDestroy(fccharset);
 		}
 
-		specs[numspecs].font = frc[f].font;
+		specs[numspecs].font  = frc[f].font;
 		specs[numspecs].glyph = glyphidx;
-		specs[numspecs].x = (short)xp;
-		specs[numspecs].y = (short)yp;
+		specs[numspecs].x     = (short)xp;
+		specs[numspecs].y     = (short)yp;
 		xp += runewidth;
 		numspecs++;
 	}

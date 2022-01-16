@@ -1,6 +1,6 @@
 # Maintainer:
 
-pkgname=st-luke-git
+pkgname=lainlayer-st
 _pkgname=st
 pkgver=0.8.2.r1062.2087ab9
 pkgrel=1
@@ -13,7 +13,7 @@ options=('zipman')
 depends=('libxft')
 makedepends=('ncurses' 'libxext' 'git')
 optdepends=('dmenu: feed urls to dmenu')
-source=('git://github.com/LukeSmithxyz/st')
+source=('git://github.com/LainLayer/st')
 sha1sums=('SKIP')
 
 provides=("${_pkgname}")
@@ -39,7 +39,7 @@ build() {
 package() {
 	cd "${_pkgname}"
 	make PREFIX=/usr DESTDIR="${pkgdir}" install
-	install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+	install -Dm644 LICENSE   "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 	install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
 	install -Dm644 Xdefaults "${pkgdir}/usr/share/doc/${pkgname}/Xdefaults.example"
 }

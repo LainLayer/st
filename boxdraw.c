@@ -10,34 +10,28 @@
 /* Rounded non-negative integers division of n / d  */
 #define DIV(n, d) (((n) + (d) / 2) / (d))
 
-static Display *xdpy;
+static Display* xdpy;
 static Colormap xcmap;
-static XftDraw *xd;
-static Visual *xvis;
+static XftDraw* xd;
+static Visual*  xvis;
 
 static void drawbox(int, int, int, int, XftColor *, XftColor *, ushort);
 static void drawboxlines(int, int, int, int, XftColor *, ushort);
 
 /* public API */
 
-void
-boxdraw_xinit(Display *dpy, Colormap cmap, XftDraw *draw, Visual *vis)
-{
+void boxdraw_xinit(Display *dpy, Colormap cmap, XftDraw *draw, Visual *vis) {
 	xdpy = dpy; xcmap = cmap; xd = draw, xvis = vis;
 }
 
-int
-isboxdraw(Rune u)
-{
+int isboxdraw(Rune u) {
 	Rune block = u & ~0xff;
 	return (boxdraw && block == 0x2500 && boxdata[(uint8_t)u]) ||
 	       (boxdraw_braille && block == 0x2800);
 }
 
 /* the "index" is actually the entire shape data encoded as ushort */
-ushort
-boxdrawindex(const Glyph *g)
-{
+ushort boxdrawindex(const Glyph *g) {
 	if (boxdraw_braille && (g->u & ~0xff) == 0x2800)
 		return BRL | (uint8_t)g->u;
 	if (boxdraw_bold && (g->mode & ATTR_BOLD))
@@ -45,9 +39,8 @@ boxdrawindex(const Glyph *g)
 	return boxdata[(uint8_t)g->u];
 }
 
-void
-drawboxes(int x, int y, int cw, int ch, XftColor *fg, XftColor *bg,
-          const XftGlyphFontSpec *specs, int len)
+void drawboxes(int x, int y, int cw, int ch, XftColor *fg, XftColor *bg,
+      	       const XftGlyphFontSpec *specs, int len)
 {
 	for ( ; len-- > 0; x += cw, specs++)
 		drawbox(x, y, cw, ch, fg, bg, (ushort)specs->glyph);
@@ -55,9 +48,7 @@ drawboxes(int x, int y, int cw, int ch, XftColor *fg, XftColor *bg,
 
 /* implementation */
 
-void
-drawbox(int x, int y, int w, int h, XftColor *fg, XftColor *bg, ushort bd)
-{
+void drawbox(int x, int y, int w, int h, XftColor *fg, XftColor *bg, ushort bd) {
 	ushort cat = bd & ~(BDB | 0xff);  /* mask out bold and data */
 	if (bd & (BDL | BDA)) {
 		/* lines (light/double/heavy/arcs) */
@@ -124,9 +115,7 @@ drawbox(int x, int y, int w, int h, XftColor *fg, XftColor *bg, ushort bd)
 	}
 }
 
-void
-drawboxlines(int x, int y, int w, int h, XftColor *fg, ushort bd)
-{
+void drawboxlines(int x, int y, int w, int h, XftColor *fg, ushort bd) {
 	/* s: stem thickness. width/8 roughly matches underscore thickness. */
 	/* We draw bold as 1.5 * normal-stem and at least 1px thicker.      */
 	/* doubles draw at least 3px, even when w or h < 3. bold needs 6px. */
@@ -138,7 +127,7 @@ drawboxlines(int x, int y, int w, int h, XftColor *fg, ushort bd)
 	/* the s-by-s square (x + w2, y + h2, s, s) is the center texel.    */
 	/* The base length (per direction till edge) includes this square.  */
 
-	int light = bd & (LL | LU | LR | LD);
+	int light   = bd & (LL | LU | LR | LD);
 	int double_ = bd & (DL | DU | DR | DD);
 
 	if (light) {

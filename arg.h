@@ -6,9 +6,12 @@
 #ifndef ARG_H__
 #define ARG_H__
 
-extern char *argv0;
+extern char* argv0;
 
-/* use main(int argc, char *argv[]) */
+/* use main(int argc, char *argv[])
+   what the hell is this cringe???????
+   TODO: Fix this
+*/
 #define ARGBEGIN	for (argv0 = *argv, argv++, argc--;\
 					argv[0] && argv[0][0] == '-'\
 					&& argv[0][1];\

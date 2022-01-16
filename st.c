@@ -49,13 +49,13 @@
 #define TLINE_HIST(y)           ((y) <= HISTSIZE-term.row+2 ? term.hist[(y)] : term.line[(y-HISTSIZE+term.row-3)])
 
 enum term_mode {
-	MODE_WRAP        = 1 << 0,
-	MODE_INSERT      = 1 << 1,
-	MODE_ALTSCREEN   = 1 << 2,
-	MODE_CRLF        = 1 << 3,
-	MODE_ECHO        = 1 << 4,
-	MODE_PRINT       = 1 << 5,
-	MODE_UTF8        = 1 << 6,
+	MODE_WRAP      = 1 << 0,
+	MODE_INSERT    = 1 << 1,
+	MODE_ALTSCREEN = 1 << 2,
+	MODE_CRLF      = 1 << 3,
+	MODE_ECHO      = 1 << 4,
+	MODE_PRINT     = 1 << 5,
+	MODE_UTF8      = 1 << 6,
 };
 
 enum cursor_movement {
@@ -170,7 +170,7 @@ static void csidump(void);
 static void csihandle(void);
 static void csiparse(void);
 static void csireset(void);
-static int eschandle(uchar);
+static int  eschandle(uchar);
 static void strdump(void);
 static void strhandle(void);
 static void strparse(void);
@@ -186,7 +186,7 @@ static void tdeletechar(int);
 static void tdeleteline(int);
 static void tinsertblank(int);
 static void tinsertblankline(int);
-static int tlinelen(int);
+static int  tlinelen(int);
 static void tmoveto(int, int);
 static void tmoveato(int, int);
 static void tnewline(int);
@@ -201,13 +201,14 @@ static void tsetdirt(int, int);
 static void tsetscroll(int, int);
 static void tswapscreen(void);
 static void tsetmode(int, int, int *, int);
-static int twrite(const char *, int, int);
+static int  twrite(const char *, int, int);
 static void tcontrolcode(uchar );
 static void tdectest(char );
 static void tdefutf8(char);
-static int32_t tdefcolor(int *, int *, int);
 static void tdeftran(char);
 static void tstrsequence(uchar);
+
+static int32_t tdefcolor(int *, int *, int);
 
 static void drawregion(int, int, int, int);
 
@@ -216,12 +217,12 @@ static void selscroll(int, int);
 static void selsnap(int *, int *, int);
 
 static size_t utf8decode(const char *, Rune *, size_t);
-static Rune utf8decodebyte(char, size_t *);
-static char utf8encodebyte(Rune, size_t);
+static Rune   utf8decodebyte(char, size_t *);
+static char   utf8encodebyte(Rune, size_t);
 static size_t utf8validate(Rune *, size_t);
 
-static char *base64dec(const char *);
-static char base64dec_getc(const char **);
+static char* base64dec(const char *);
+static char  base64dec_getc(const char **);
 
 static ssize_t xwrite(int, const char *, size_t);
 
@@ -272,7 +273,7 @@ void* xrealloc(void *p, size_t len) {
 	return p;
 }
 
-char * xstrdup(char *s) {
+char* xstrdup(char *s) {
 	if ((s = strdup(s)) == NULL)
 		die("strdup: %s\n", strerror(errno));
 
@@ -284,11 +285,15 @@ size_t utf8decode(const char *c, Rune *u, size_t clen) {
 	Rune udecoded;
 
 	*u = UTF_INVALID;
+
 	if (!clen)
 		return 0;
+
 	udecoded = utf8decodebyte(c[0], &len);
+
 	if (!BETWEEN(len, 1, UTF_SIZ))
 		return 1;
+
 	for (i = 1, j = 1; i < clen && j < len; ++i, ++j) {
 		udecoded = (udecoded << 6) | utf8decodebyte(c[i], &type);
 		if (type != 0)
@@ -296,6 +301,7 @@ size_t utf8decode(const char *c, Rune *u, size_t clen) {
 	}
 	if (j < len)
 		return 0;
+
 	*u = udecoded;
 	utf8validate(u, len);
 
@@ -321,6 +327,7 @@ size_t utf8encode(Rune u, char *c) {
 		c[i] = utf8encodebyte(u, 0);
 		u >>= 6;
 	}
+
 	c[0] = utf8encodebyte(u, len);
 
 	return len;
@@ -333,8 +340,8 @@ inline char utf8encodebyte(Rune u, size_t i) {
 size_t utf8validate(Rune *u, size_t i) {
 	if (!BETWEEN(*u, utfmin[i], utfmax[i]) || BETWEEN(*u, 0xD800, 0xDFFF))
 		*u = UTF_INVALID;
-	for (i = 1; *u > utfmax[i]; ++i)
-		;
+
+	for (i = 1; *u > utfmax[i]; ++i);
 
 	return i;
 }
@@ -439,15 +446,16 @@ void selextend(int col, int row, int type, int done) {
 
 	if (sel.mode == SEL_IDLE)
 		return;
+
 	if (done && sel.mode == SEL_EMPTY) {
 		selclear();
 		return;
 	}
 
-	oldey = sel.oe.y;
-	oldex = sel.oe.x;
-	oldsby = sel.nb.y;
-	oldsey = sel.ne.y;
+	oldey   = sel.oe.y;
+	oldex   = sel.oe.x;
+	oldsby  = sel.nb.y;
+	oldsey  = sel.ne.y;
 	oldtype = sel.type;
 
 	sel.oe.x = col;
@@ -480,9 +488,12 @@ void selnormalize(void) {
 	/* expand selection over line breaks */
 	if (sel.type == SEL_RECTANGULAR)
 		return;
+
 	i = tlinelen(sel.nb.y);
+
 	if (i < sel.nb.x)
 		sel.nb.x = i;
+	
 	if (tlinelen(sel.ne.y) <= sel.ne.x)
 		sel.ne.x = term.col - 1;
 }
