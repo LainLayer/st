@@ -20,8 +20,9 @@ LIBS = -L$(X11LIB) -lm -lrt -lX11 -lutil -lXft -lXrender $(MLIBS)
 
 # profiling
 
-PROF_GEN = -fprofile-instr-generate
-RPOF_RES = -fprofile-instr-use=code.profdata
+MODE      = NONE
+PROF_GEN  = -fprofile-instr-generate
+RPOF_RES  = -fprofile-instr-use=code.profdata
 PROF_NONE =""
 
 # custom flags
