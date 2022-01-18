@@ -55,10 +55,10 @@ enum selection_snap {
 	SNAP_LINE = 2
 };
 
-typedef unsigned char uchar;
-typedef unsigned int uint;
-typedef unsigned long ulong;
-typedef unsigned short ushort;
+typedef u_int8_t  uchar;
+typedef u_int32_t uint;
+typedef u_int64_t ulong;
+typedef u_int16_t ushort;
 
 typedef uint_least32_t Rune;
 
@@ -95,13 +95,13 @@ void toggleprinter(const Arg *);
 
 int tattrset(int);
 void tnew(int, int);
-void tresize(int, int);
+void tresize(unsigned int, unsigned int);
 void tsetdirtattr(int);
 void ttyhangup(void);
 int ttynew(char *, char *, char *, char **);
-size_t ttyread(void);
+ulong ttyread(void);
 void ttyresize(int, int);
-void ttywrite(const char *, size_t, int);
+void ttywrite(const char *, ulong, int);
 
 void resettitle(void);
 
@@ -109,10 +109,10 @@ void selclear(void);
 void selinit(void);
 void selstart(int, int, int);
 void selextend(int, int, int, int);
-int selected(int, int);
+int selected(uint, uint);
 char *getsel(void);
 
-size_t utf8encode(Rune, char *);
+ulong utf8encode(Rune, char *);
 
 void *xmalloc(size_t);
 void *xrealloc(void *, size_t);

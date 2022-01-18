@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <pwd.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,9 @@
 #include <termios.h>
 #include <unistd.h>
 #include <wchar.h>
+
+// my includes
+#include <assert.h>
 
 #include "st.h"
 #include "win.h"
@@ -43,9 +47,10 @@
 #define ISCONTROLC1(c)		(BETWEEN(c, 0x80, 0x9f))
 #define ISCONTROL(c)		(ISCONTROLC0(c) || ISCONTROLC1(c))
 #define ISDELIM(u)		(u && wcschr(worddelimiters, u))
-#define TLINE(y)		((y) < term.scr ? term.hist[((y) + term.histi - \
+#define TLINE(y)		(((int)y) < term.scr ? term.hist[(((int)y) + term.histi - \
 				term.scr + HISTSIZE + 1) % HISTSIZE] : \
-				term.line[(y) - term.scr])
+				term.line[((int)y) - term.scr])
+
 #define TLINE_HIST(y)           ((y) <= HISTSIZE-term.row+2 ? term.hist[(y)] : term.line[(y-HISTSIZE+term.row-3)])
 
 enum term_mode {
@@ -91,8 +96,8 @@ enum escape_state {
 
 typedef struct {
 	Glyph attr; /* current char attributes */
-	int x;
-	int y;
+	uint x;
+	uint y;
 	char state;
 } TCursor;
 
@@ -116,9 +121,9 @@ typedef struct {
 
 /* Internal representation of the screen */
 typedef struct {
-	int row;      /* nb row */
-	int col;      /* nb col */
-	int maxcol;
+	uint row;      /* nb row */
+	uint col;      /* nb col */
+	uint maxcol;
 	Line *line;   /* screen */
 	Line *alt;    /* alternate screen */
 	Line hist[HISTSIZE]; /* history buffer */
@@ -126,8 +131,8 @@ typedef struct {
 	int scr;      /* scroll back */
 	int *dirty;   /* dirtyness of lines */
 	TCursor c;    /* cursor */
-	int ocx;      /* old cursor col */
-	int ocy;      /* old cursor row */
+	uint ocx;      /* old cursor col */
+	uint ocy;      /* old cursor row */
 	int top;      /* top    scroll limit */
 	int bot;      /* bottom scroll limit */
 	int mode;     /* terminal mode flags */
@@ -143,7 +148,7 @@ typedef struct {
 /* ESC '[' [[ [<priv>] <arg> [;]] <mode> [<mode>]] */
 typedef struct {
 	char buf[ESC_BUF_SIZ]; /* raw string */
-	size_t len;            /* raw string length */
+	ulong len;            /* raw string length */
 	char priv;
 	int arg[ESC_ARG_SIZ];
 	int narg;              /* nb of args */
@@ -155,8 +160,8 @@ typedef struct {
 typedef struct {
 	char type;             /* ESC type ... */
 	char *buf;             /* allocated raw string */
-	size_t siz;            /* allocation size */
-	size_t len;            /* raw string length */
+	ulong siz;            /* allocation size */
+	ulong len;            /* raw string length */
 	char *args[STR_ARG_SIZ];
 	int narg;              /* nb of args */
 } STREscape;
@@ -164,7 +169,7 @@ typedef struct {
 static void execsh(char *, char **);
 static void stty(char **);
 static void sigchld(int);
-static void ttywriteraw(const char *, size_t);
+static void ttywriteraw(const char *, ulong);
 
 static void csidump(void);
 static void csihandle(void);
@@ -176,18 +181,18 @@ static void strhandle(void);
 static void strparse(void);
 static void strreset(void);
 
-static void tprinter(char *, size_t);
+static void tprinter(char *, ulong);
 static void tdumpsel(void);
 static void tdumpline(int);
 static void tdump(void);
-static void tclearregion(int, int, int, int);
+static void tclearregion(uint, uint, uint, uint);
 static void tcursor(int);
 static void tdeletechar(int);
 static void tdeleteline(int);
 static void tinsertblank(int);
 static void tinsertblankline(int);
 static int  tlinelen(int);
-static void tmoveto(int, int);
+static void tmoveto(uint, uint);
 static void tmoveato(int, int);
 static void tnewline(int);
 static void tputtab(int);
@@ -196,12 +201,12 @@ static void treset(void);
 static void tscrollup(int, int, int);
 static void tscrolldown(int, int, int);
 static void tsetattr(int *, int);
-static void tsetchar(Rune, Glyph *, int, int);
+static void tsetchar(Rune, Glyph *, uint, uint);
 static void tsetdirt(int, int);
-static void tsetscroll(int, int);
+static void tsetscroll(uint, uint);
 static void tswapscreen(void);
 static void tsetmode(int, int, int *, int);
-static int  twrite(const char *, int, int);
+static uint twrite(const char *, uint, int);
 static void tcontrolcode(uchar );
 static void tdectest(char );
 static void tdefutf8(char);
@@ -210,21 +215,21 @@ static void tstrsequence(uchar);
 
 static int32_t tdefcolor(int *, int *, int);
 
-static void drawregion(int, int, int, int);
+static void drawregion(uint, uint, uint, uint);
 
 static void selnormalize(void);
 static void selscroll(int, int);
 static void selsnap(int *, int *, int);
 
-static size_t utf8decode(const char *, Rune *, size_t);
-static Rune   utf8decodebyte(char, size_t *);
-static char   utf8encodebyte(Rune, size_t);
-static size_t utf8validate(Rune *, size_t);
+static ulong utf8decode(const char *, Rune *, ulong);
+static Rune   utf8decodebyte(char, ulong *);
+static char   utf8encodebyte(Rune, ulong);
+static ulong utf8validate(Rune *, ulong);
 
 static char* base64dec(const char *);
 static char  base64dec_getc(const char **);
 
-static ssize_t xwrite(int, const char *, size_t);
+static int xwrite(int, const char *, uint);
 
 /* Globals */
 static Term term;
@@ -237,12 +242,13 @@ static pid_t pid;
 
 static uchar utfbyte[UTF_SIZ + 1] = {0x80,    0, 0xC0, 0xE0, 0xF0};
 static uchar utfmask[UTF_SIZ + 1] = {0xC0, 0x80, 0xE0, 0xF0, 0xF8};
-static Rune utfmin[UTF_SIZ + 1] = {       0,    0,  0x80,  0x800,  0x10000};
-static Rune utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
 
-ssize_t xwrite(int fd, const char *s, size_t len) {
-	size_t aux = len;
-	ssize_t r;
+static Rune  utfmin[UTF_SIZ + 1]  = {       0,    0,  0x80,  0x800,  0x10000};
+static Rune  utfmax[UTF_SIZ + 1]  = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
+
+int xwrite(int fd, const char *s, uint len) {
+	uint aux = len;
+	int r;
 
 	while (len > 0) {
 		r = write(fd, s, len);
@@ -256,7 +262,7 @@ ssize_t xwrite(int fd, const char *s, size_t len) {
 }
 
 // wtf?
-void* xmalloc(size_t len) {
+void* xmalloc(ulong len) {
 	void *p;
 
 	if (!(p = malloc(len)))
@@ -266,7 +272,7 @@ void* xmalloc(size_t len) {
 }
 
 // wtf?
-void* xrealloc(void *p, size_t len) {
+void* xrealloc(void *p, ulong len) {
 	if ((p = realloc(p, len)) == NULL)
 		die("realloc: %s\n", strerror(errno));
 
@@ -280,8 +286,8 @@ char* xstrdup(char *s) {
 	return s;
 }
 
-size_t utf8decode(const char *c, Rune *u, size_t clen) {
-	size_t i, j, len, type;
+ulong utf8decode(const char *c, Rune *u, ulong clen) {
+	long i, j, len, type;
 	Rune udecoded;
 
 	*u = UTF_INVALID;
@@ -308,7 +314,7 @@ size_t utf8decode(const char *c, Rune *u, size_t clen) {
 	return len;
 }
 
-Rune utf8decodebyte(char c, size_t *i) {
+Rune utf8decodebyte(char c, ulong *i) {
 	for (*i = 0; *i < LEN(utfmask); ++(*i))
 		if (((uchar)c & utfmask[*i]) == utfbyte[*i])
 			return (uchar)c & ~utfmask[*i];
@@ -316,8 +322,8 @@ Rune utf8decodebyte(char c, size_t *i) {
 	return 0;
 }
 
-size_t utf8encode(Rune u, char *c) {
-	size_t len, i;
+ulong utf8encode(Rune u, char *c) {
+	long len, i;
 
 	len = utf8validate(&u, 0);
 	if (len > UTF_SIZ)
@@ -333,11 +339,12 @@ size_t utf8encode(Rune u, char *c) {
 	return len;
 }
 
-inline char utf8encodebyte(Rune u, size_t i) {
-	return utfbyte[i] | (u & ~utfmask[i]);
+inline char utf8encodebyte(Rune u, ulong i) {
+	Rune tmp = (Rune)utfbyte[i] | (u & (Rune)~utfmask[i]);
+	return (char)tmp;
 }
 
-size_t utf8validate(Rune *u, size_t i) {
+ulong utf8validate(Rune *u, ulong i) {
 	if (!BETWEEN(*u, utfmin[i], utfmax[i]) || BETWEEN(*u, 0xD800, 0xDFFF))
 		*u = UTF_INVALID;
 
@@ -368,17 +375,17 @@ char base64dec_getc(const char **src) {
 }
 
 char* base64dec(const char *src) {
-	size_t in_len = strlen(src);
+	ulong in_len = strlen(src);
 	char *result, *dst;
 
 	if (in_len % 4)
 		in_len += 4 - (in_len % 4);
 	result = dst = xmalloc(in_len / 4 * 3 + 1);
 	while (*src) {
-		int a = base64_digits[(unsigned char) base64dec_getc(&src)];
-		int b = base64_digits[(unsigned char) base64dec_getc(&src)];
-		int c = base64_digits[(unsigned char) base64dec_getc(&src)];
-		int d = base64_digits[(unsigned char) base64dec_getc(&src)];
+		int a = base64_digits[base64dec_getc(&src)];
+		int b = base64_digits[base64dec_getc(&src)];
+		int c = base64_digits[base64dec_getc(&src)];
+		int d = base64_digits[base64dec_getc(&src)];
 
 		/* invalid input. 'a' can be -1, e.g. if src is "\n" (c-str) */
 		if (a == -1 || b == -1)
@@ -498,7 +505,7 @@ void selnormalize(void) {
 		sel.ne.x = term.col - 1;
 }
 
-int selected(int x, int y) {
+int selected(uint x, uint y) {
 	if (sel.mode == SEL_EMPTY || sel.ob.x == -1 ||
 			sel.alt != IS_SET(MODE_ALTSCREEN))
 		return 0;
@@ -724,7 +731,7 @@ void sigchld(int a) {
 
 void stty(char **args) {
 	char cmd[_POSIX_ARG_MAX], **p, *q, *s;
-	size_t n, siz;
+	ulong n, siz;
 
 	if ((n = strlen(stty_args)) > sizeof(cmd)-1)
 		die("incorrect stty parameters\n");
@@ -797,7 +804,7 @@ int ttynew(char *line, char *cmd, char *out, char **args) {
 	return cmdfd;
 }
 
-size_t ttyread(void) {
+ulong ttyread(void) {
 	static char buf[BUFSIZ];
 	static int buflen = 0;
 	int ret, written;
@@ -821,7 +828,7 @@ size_t ttyread(void) {
 	}
 }
 
-void ttywrite(const char *s, size_t n, int may_echo) {
+void ttywrite(const char *s, ulong n, int may_echo) {
 	const char *next;
 	Arg arg = (Arg) { .i = term.scr };
 
@@ -850,10 +857,10 @@ void ttywrite(const char *s, size_t n, int may_echo) {
 	}
 }
 
-void ttywriteraw(const char *s, size_t n) {
+void ttywriteraw(const char *s, ulong n) {
 	fd_set wfd, rfd;
-	ssize_t r;
-	size_t lim = 256;
+	long r;
+	ulong lim = 256;
 
 	/*
 	 * Remember that we are using a pty, which might be a modem line.
@@ -1160,7 +1167,7 @@ inline void tmoveato(int x, int y) {
 	tmoveto(x, y + ((term.c.state & CURSOR_ORIGIN) ? term.top: 0));
 }
 
-void tmoveto(int x, int y) {
+void tmoveto(uint x, uint y) {
 	int miny, maxy;
 
 	if (term.c.state & CURSOR_ORIGIN) {
@@ -1175,7 +1182,7 @@ void tmoveto(int x, int y) {
 	term.c.y = LIMIT(y, miny, maxy);
 }
 
-void tsetchar(Rune u, Glyph *attr, int x, int y) {
+void tsetchar(Rune u, Glyph *attr, uint x, uint y) {
 	static char *vt100_0[62] = { /* 0x41 - 0x7e */
 		"↑", "↓", "→", "←", "█", "▚", "☃", /* A - G */
 		0, 0, 0, 0, 0, 0, 0, 0, /* H - O */
@@ -1212,7 +1219,7 @@ void tsetchar(Rune u, Glyph *attr, int x, int y) {
 		term.line[y][x].mode |= ATTR_BOXDRAW;
 }
 
-void tclearregion(int x1, int y1, int x2, int y2) {
+void tclearregion(uint x1, uint y1, uint x2, uint y2) {
 	int x, y, temp;
 	Glyph *gp;
 
@@ -1428,7 +1435,7 @@ void tsetattr(int *attr, int l) {
 	}
 }
 
-void tsetscroll(int t, int b) {
+void tsetscroll(uint t, uint b) {
 	int temp;
 
 	LIMIT(t, 0, term.row-1);
@@ -1781,7 +1788,7 @@ void csihandle(void) {
 }
 
 void csidump(void) {
-	size_t i;
+	ulong i;
 	uint c;
 
 	fprintf(stderr, "ESC[");
@@ -1951,7 +1958,7 @@ void externalpipe(const Arg *arg) {
 }
 
 void strdump(void) {
-	size_t i;
+	ulong i;
 	uint c;
 
 	fprintf(stderr, "ESC%c", strescseq.type);
@@ -1987,7 +1994,7 @@ void sendbreak(const Arg *arg) {
 		perror("Error sending break");
 }
 
-void tprinter(char *s, size_t len) {
+void tprinter(char *s, ulong len) {
 	if (iofd != -1 && xwrite(iofd, s, len) < 0) {
 		perror("Error writing to output file");
 		close(iofd);
@@ -2283,8 +2290,9 @@ int eschandle(uchar ascii) {
 
 void tputc(Rune u) {
 	char c[UTF_SIZ];
-	int control;
-	int width, len;
+	uint control;
+	uint width = 0;
+	ulong len   = 0;
 	Glyph *gp;
 
 	control = ISCONTROL(u);
@@ -2293,7 +2301,7 @@ void tputc(Rune u) {
 		width = len = 1;
 	} else {
 		len = utf8encode(u, c);
-		if (!control && (width = wcwidth(u)) == -1)
+		if (!control && (width = (uint)(wcwidth(u) == -1)))
 			width = 1;
 	}
 
@@ -2417,10 +2425,10 @@ check_control_code:
 	}
 }
 
-int twrite(const char *buf, int buflen, int show_ctrl) {
-	int charsize;
+uint twrite(const char *buf, uint buflen, int show_ctrl) {
+	ulong charsize;
 	Rune u;
-	int n;
+	uint n;
 
 	for (n = 0; n < buflen; n += charsize) {
 		if (IS_SET(MODE_UTF8)) {
@@ -2447,17 +2455,18 @@ int twrite(const char *buf, int buflen, int show_ctrl) {
 	return n;
 }
 
-void tresize(int col, int row) {
+void tresize(uint col, uint row) {
 	int i, j;
-	int tmp;
-	int minrow, mincol;
+	uint tmp;
+	uint minrow, mincol;
 	int *bp;
 	TCursor c;
 
 	tmp = col;
 	if (!term.maxcol)
 		term.maxcol = term.col;
-	col = MAX(col, term.maxcol);
+
+	col    = MAX(col, term.maxcol);
 	minrow = MIN(row, term.row);
 	mincol = MIN(col, term.maxcol);
 
@@ -2472,7 +2481,7 @@ void tresize(int col, int row) {
 	 * tscrollup would work here, but we can optimize to
 	 * memmove because we're freeing the earlier lines
 	 */
-	for (i = 0; i <= term.c.y - row; i++) {
+	for (i = 0; i <= (int)term.c.y - (int)row; i++) {
 		free(term.line[i]);
 		free(term.alt[i]);
 	}
@@ -2481,35 +2490,35 @@ void tresize(int col, int row) {
 		memmove(term.line, term.line + i, row * sizeof(Line));
 		memmove(term.alt, term.alt + i, row * sizeof(Line));
 	}
-	for (i += row; i < term.row; i++) {
+	for (i += row; i < (int)term.row; i++) {
 		free(term.line[i]);
 		free(term.alt[i]);
 	}
 
 	/* resize to new height */
-	term.line = xrealloc(term.line, row * sizeof(Line));
-	term.alt  = xrealloc(term.alt,  row * sizeof(Line));
+	term.line  = xrealloc(term.line,  row * sizeof(Line));
+	term.alt   = xrealloc(term.alt,   row * sizeof(Line));
 	term.dirty = xrealloc(term.dirty, row * sizeof(*term.dirty));
-	term.tabs = xrealloc(term.tabs, col * sizeof(*term.tabs));
+	term.tabs  = xrealloc(term.tabs,  col * sizeof(*term.tabs));
 
 	for (i = 0; i < HISTSIZE; i++) {
 		term.hist[i] = xrealloc(term.hist[i], col * sizeof(Glyph));
-		for (j = mincol; j < col; j++) {
+		for (j = (int)mincol; j < (int)col; j++) {
 			term.hist[i][j] = term.c.attr;
 			term.hist[i][j].u = ' ';
 		}
 	}
 
 	/* resize each row to new width, zero-pad if needed */
-	for (i = 0; i < minrow; i++) {
+	for (i = 0; i < (int)minrow; i++) {
 		term.line[i] = xrealloc(term.line[i], col * sizeof(Glyph));
 		term.alt[i]  = xrealloc(term.alt[i],  col * sizeof(Glyph));
 	}
 
 	/* allocate any new rows */
-	for (/* i = minrow */; i < row; i++) {
+	for (/* i = minrow */; i < (int)row; i++) {
 		term.line[i] = xmalloc(col * sizeof(Glyph));
-		term.alt[i] = xmalloc(col * sizeof(Glyph));
+		term.alt[i]  = xmalloc(col * sizeof(Glyph));
 	}
 	if (col > term.maxcol) {
 		bp = term.tabs + term.maxcol;
@@ -2547,8 +2556,8 @@ void resettitle(void) {
 	xsettitle(NULL);
 }
 
-void drawregion(int x1, int y1, int x2, int y2) {
-	int y;
+void drawregion(uint x1, uint y1, uint x2, uint y2) {
+	unsigned int y;
 
 	for (y = y1; y < y2; y++) {
 		if (!term.dirty[y])
@@ -2560,7 +2569,7 @@ void drawregion(int x1, int y1, int x2, int y2) {
 }
 
 void draw(void) {
-	int cx = term.c.x, ocx = term.ocx, ocy = term.ocy;
+	uint cx = term.c.x, ocx = term.ocx, ocy = term.ocy;
 
 	if (!xstartdraw())
 		return;
@@ -2575,17 +2584,17 @@ void draw(void) {
 
 	drawregion(0, 0, term.col, term.row);
 	if (term.scr == 0)
-		xdrawcursor(cx, term.c.y, term.line[term.c.y][cx],
+		xdrawcursor(cx, (uint)term.c.y, term.line[term.c.y][cx],
 				term.ocx, term.ocy, term.line[term.ocy][term.ocx],
 				term.line[term.ocy], term.col);
 	/* xdrawcursor(cx, term.c.y, term.line[term.c.y][cx], */
 	/* 		term.ocx, term.ocy, term.line[term.ocy][term.ocx], */
 	/* 		term.line[term.ocy], term.col); */
 	term.ocx = cx;
-	term.ocy = term.c.y;
+	term.ocy = (uint)term.c.y;
 	xfinishdraw();
 	if (ocx != term.ocx || ocy != term.ocy)
-		xximspot(term.ocx, term.ocy);
+		xximspot((int)term.ocx, (int)term.ocy);
 }
 
 void redraw(void) {

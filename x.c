@@ -16,7 +16,7 @@
 #include <X11/XKBlib.h>
 #include <X11/Xresource.h>
 
-char *argv0;
+static char *argv0;
 #include "arg.h"
 #include "st.h"
 #include "win.h"
@@ -70,7 +70,7 @@ static void clipcopy(const Arg *);
 static void clippaste(const Arg *);
 static inline void numlock(const Arg *);
 static inline void selpaste(const Arg *);
-static void changealpha(const Arg *);
+// static void changealpha(const Arg *);
 static void zoom(const Arg *);
 static void zoomabs(const Arg *);
 static void zoomreset(const Arg *);
@@ -134,6 +134,7 @@ typedef struct {
 } XSelection;
 
 /* Font structure */
+// why?
 #define Font Font_
 typedef struct {
 	int height;
@@ -182,7 +183,7 @@ static void xsetenv(void);
 static void xseturgency(int);
 static int evcol(XEvent *);
 static int evrow(XEvent *);
-static float clamp(float, float, float);
+// static float clamp(float, float, float);
 
 static void expose(XEvent *);
 static void visibility(XEvent *);
@@ -198,7 +199,7 @@ static void bpress(XEvent *);
 static void bmotion(XEvent *);
 static void propnotify(XEvent *);
 static void selnotify(XEvent *);
-static void selclear_(XEvent *);
+// static void selclear_(XEvent *);
 static void selrequest(XEvent *);
 static void setsel(char *, Time);
 static void mousesel(XEvent *, int);
@@ -210,17 +211,17 @@ static void run(void);
 static void usage(void);
 
 static void (*handler[LASTEvent])(XEvent *) = {
-	[KeyPress] = kpress,
-	[ClientMessage] = cmessage,
-	[ConfigureNotify] = resize,
+	[KeyPress]         = kpress,
+	[ClientMessage]    = cmessage,
+	[ConfigureNotify]  = resize,
 	[VisibilityNotify] = visibility,
-	[UnmapNotify] = unmap,
-	[Expose] = expose,
-	[FocusIn] = focus,
-	[FocusOut] = focus,
-	[MotionNotify] = bmotion,
-	[ButtonPress] = bpress,
-	[ButtonRelease] = brelease,
+	[UnmapNotify]      = unmap,
+	[Expose]           = expose,
+	[FocusIn]          = focus,
+	[FocusOut]         = focus,
+	[MotionNotify]     = bmotion,
+	[ButtonPress]      = bpress,
+	[ButtonRelease]    = brelease,
 /*
  * Uncomment if you want the selection to disappear when you select something
  * different in another window.
@@ -308,15 +309,15 @@ inline void numlock(const Arg *dummy) {
 	win.mode ^= MODE_NUMLOCK;
 }
 
-void changealpha(const Arg *arg) {
-    if((alpha > 0 && arg->f < 0) || (alpha < 1 && arg->f > 0))
-        alpha += arg->f;
-    alpha = clamp(alpha, 0.0, 1.0);
-    alphaUnfocus = clamp(alpha-alphaOffset, 0.0, 1.0);
+// void changealpha(const Arg *arg) {
+//     if((alpha > 0 && arg->f < 0) || (alpha < 1 && arg->f > 0))
+//         alpha += arg->f;
+//     alpha = clamp(alpha, 0.0, 1.0);
+//     alphaUnfocus = clamp(alpha-alphaOffset, 0.0, 1.0);
 
-    xloadcols();
-    redraw();
-}
+//     xloadcols();
+//     redraw();
+// }
 
 void zoom(const Arg *arg) {
 	Arg larg;
@@ -359,13 +360,13 @@ int evrow(XEvent *e) {
 	return y / win.ch;
 }
 
-float clamp(float value, float lower, float upper) {
-    if(value < lower)
-        return lower;
-    if(value > upper)
-        return upper;
-    return value;
-}
+// float clamp(float value, float lower, float upper) {
+//     if(value < lower)
+//         return lower;
+//     if(value > upper)
+//         return upper;
+//     return value;
+// }
 
 void mousesel(XEvent *e, int done) {
 	int type, seltype = SEL_REGULAR;
@@ -443,6 +444,7 @@ void mousereport(XEvent *e) {
 	ttywrite(buf, len, 0);
 }
 
+// what?
 inline uint buttonmask(uint button) {
 	return button == Button1 ? Button1Mask
 	     : button == Button2 ? Button2Mask
@@ -600,13 +602,13 @@ void selnotify(XEvent *e) {
 	XDeleteProperty(xw.dpy, xw.win, (int)property);
 }
 
-void xclipcopy(void) {
+inline void xclipcopy(void) {
 	clipcopy(NULL);
 }
 
-void selclear_(XEvent *e) {
-	selclear();
-}
+// inline void selclear_(XEvent *e) {
+// 	selclear();
+// }
 
 void selrequest(XEvent *e) {
 	XSelectionRequestEvent *xsre;
@@ -710,6 +712,7 @@ void cresize(int width, int height) {
 	if (height != 0)
 		win.h = height;
 
+	// possibly related to where i can resize the draw window?
 	col = (win.w - 2 * borderpx) / win.cw;
 	row = (win.h - 2 * borderpx) / win.ch;
 	col = MAX(1, col);
@@ -761,11 +764,11 @@ int xloadcolor(int i, const char *name, Color *ncolor) {
 }
 
 void xloadalpha(void) {
-	float const usedAlpha = focused ? alpha : alphaUnfocus;
+	const float usedAlpha = focused ? alpha : alphaUnfocus;
 	if (opt_alpha) alpha = strtof(opt_alpha, NULL);
 	dc.col[defaultbg].color.alpha = (unsigned short)(0xffff * usedAlpha);
 	dc.col[defaultbg].pixel &= 0x00FFFFFF;
-	dc.col[defaultbg].pixel |= (unsigned char)(0xff * usedAlpha) << 24;
+	dc.col[defaultbg].pixel |= (unsigned long)(255.0f * usedAlpha);
 }
 
 void xloadcols(void) {
@@ -796,10 +799,9 @@ void xloadcols(void) {
 int xsetcolorname(int x, const char *name) {
 	Color ncolor;
 
-	if (!BETWEEN(x, 0, dc.collen))
-		return 1;
+	// TODO: see if this breaks
 
-	if (!xloadcolor(x, name, &ncolor))
+	if (!BETWEEN(x, 0, dc.collen) || !xloadcolor(x, name, &ncolor))
 		return 1;
 
 	XftColorFree(xw.dpy, xw.vis, xw.cmap, &dc.col[x]);
@@ -1568,7 +1570,8 @@ void xdrawglyph(Glyph g, int x, int y) {
 	xdrawglyphfontspecs(&spec, g, numspecs, x, y);
 }
 
-void xdrawcursor(int cx, int cy, Glyph g, int ox, int oy, Glyph og, Line line, int len) {
+void xdrawcursor(unsigned int cx, unsigned int cy, Glyph g, unsigned int ox,
+				 unsigned int oy, Glyph og, Line line, unsigned int len) {
 	Color drawcol;
 
 	/* remove the old cursor */
@@ -1656,7 +1659,7 @@ void xdrawcursor(int cx, int cy, Glyph g, int ox, int oy, Glyph og, Line line, i
 }
 
 void xsetenv(void) {
-	char buf[sizeof(long) * 8 + 1];
+	char buf[sizeof(long) * 8 + 1]; // why long?
 
 	snprintf(buf, sizeof(buf), "%lu", xw.win);
 	setenv("WINDOWID", buf, 1);
@@ -1688,7 +1691,7 @@ inline int xstartdraw(void) {
 	return IS_SET(MODE_VISIBLE);
 }
 
-void xdrawline(Line line, int x1, int y1, int x2) {
+void xdrawline(Line line, uint x1, uint y1, uint x2) {
 	int i, x, ox, numspecs;
 	Glyph base, new;
 	XftGlyphFontSpec *specs = xw.specbuf;
@@ -1735,7 +1738,7 @@ void xximspot(int x, int y) {
 	XSetICValues(xw.ime.xic, XNPreeditAttributes, xw.ime.spotlist, NULL);
 }
 
-void expose(XEvent *ev) {
+inline void expose(XEvent *ev) {
 	redraw();
 }
 
@@ -1745,7 +1748,7 @@ void visibility(XEvent *ev) {
 	MODBIT(win.mode, e->state != VisibilityFullyObscured, MODE_VISIBLE);
 }
 
-void unmap(XEvent *ev) {
+inline void unmap(XEvent *ev) {
 	win.mode &= ~MODE_VISIBLE;
 }
 
@@ -1815,7 +1818,7 @@ void focus(XEvent *ev) {
 	}
 }
 
-int match(uint mask, uint state) {
+inline int match(uint mask, uint state) {
 	return mask == XK_ANY_MOD || mask == (state & ~ignoremod);
 }
 

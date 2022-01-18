@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -55,19 +56,19 @@ void hbtransform(XftGlyphFontSpec *specs, const Glyph *glyphs, size_t len, int x
 	int start = 0, length = 1, gstart = 0;
 	hb_codepoint_t *codepoints = calloc(len, sizeof(hb_codepoint_t));
 
-	for (int idx = 1, specidx = 1; idx < len; idx++) {
+	for (size_t idx = 1, specidx = 1; idx < len; idx++) {
 		if (glyphs[idx].mode & ATTR_WDUMMY) {
 			length += 1;
 			continue;
 		}
 
-		if (specs[specidx].font != specs[start].font || ATTRCMP(glyphs[gstart], glyphs[idx]) || selected(x + idx, y) != selected(x + gstart, y)) {
+		if (specs[specidx].font != specs[start].font || ATTRCMP(glyphs[gstart], glyphs[idx]) || selected((uint)x + (uint)idx, (uint)y) != selected((uint)x + (uint)gstart, (uint)y)) {
 			hbtransformsegment(specs[start].font, glyphs, codepoints, gstart, length);
 
 			/* Reset the sequence. */
 			length = 1;
-			start = specidx;
-			gstart = idx;
+			start = (int)specidx;
+			gstart = (int)idx;
 		} else {
 			length += 1;
 		}
@@ -79,7 +80,7 @@ void hbtransform(XftGlyphFontSpec *specs, const Glyph *glyphs, size_t len, int x
 	hbtransformsegment(specs[start].font, glyphs, codepoints, gstart, length);
 
 	/* Apply the transformation to glyph specs. */
-	for (int i = 0, specidx = 0; i < len; i++) {
+	for (size_t i = 0, specidx = 0; i < len; i++) {
 		if (glyphs[i].mode & ATTR_WDUMMY)
 			continue;
 		if (glyphs[i].mode & ATTR_BOXDRAW) {
